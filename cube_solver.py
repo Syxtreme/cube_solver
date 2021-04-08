@@ -12,7 +12,7 @@ import argparse
 from warnings import warn
 from python_tsp.exact import solve_tsp_dynamic_programming
 from matplotlib import pyplot as plt
-
+from uuid import uuid4
 
 class Direction():
     """Class to store and manipulate directions.
@@ -121,7 +121,7 @@ class Cell():
         self._neighbors[direction] = self._cube[number]
 
     def __getitem__(self, direction):
-        return self._neighbors[key]
+        return self._neighbors[direction]
 
     def __setitem__(self, direction, number):
         self._add_neighbor(number, direction)
@@ -447,14 +447,14 @@ class Cube():
 parser = argparse.ArgumentParser()
 parser.add_argument("input_table", help="CSV file to be processed.")
 parser.add_argument("--points", "-p", help="Point of the path", type=int, nargs="+")
+parser.add_argument("--draw", "-d", help="Draws the slices of the cube.", action="store_true")
+parser.add_argument("--draw-gates", "-g", help="Draws the slices of the cube with gates", action="store_true")
 
 # args = parser.parse_args(["Mapa CUBE - Hárok1.csv"] + "-p 15 63".split())
 # args = parser.parse_args(["Mapa CUBE - Hárok1.csv"] + "-p 15 63 86".split())
-args = parser.parse_args(["Mapa CUBE - Hárok1.csv"] + "-p 15 63 86 104 178".split())
+# args = parser.parse_args(["Mapa CUBE - Hárok1.csv"] + "-p 15 63 86 104 178".split())
+# args = parser.parse_args(["Mapa CUBE - Hárok1.csv", "-g"])
 # args = parser.parse_args()
-
-points = np.asarray(args.points).ravel().tolist()
-print(f"Path points: {points}")
 
 table = pd.read_csv(args.input_table, header=None)
 columns, rows = np.ogrid[0:len(table.columns):3, 0:table.index.stop:3]
@@ -488,16 +488,39 @@ cube.construct_grid()
 # print(directions)
 # print([c.number for c in path])
 
-fig, axs = plt.subplots(2, 3)
-i = 0
-for rax in axs:
-    for ax in rax:
+if args.draw:
+    fig, axs = plt.subplots(2, 3)
+    i = 0
+    for rax in axs:
+        for ax in rax:
+            ax.axis('tight')
+            ax.axis('off')
+            plane = []
+            for row in cube.grid[:, :, i]:
+                plane.append([c.number for c in row])
+            ax.table(plane,loc='center')
+            i += 1
+    plt.savefig(f"{uuid4()}.png")
+
+if args.draw_gates:
+    for i in range(cube.SIDE):
+        fig, ax = plt.subplots()
         ax.axis('tight')
         ax.axis('off')
         plane = []
         for row in cube.grid[:, :, i]:
-            plane.append([c.number for c in row])
-        ax.table(plane,loc='center')
-        i += 1
-        
-cube.getPath(points)
+            line = []
+            for c in row:
+                nn = np.asanyarray([c[d].number
+                                    for d in Direction.LIST]).reshape(2, 3)
+                elem = np.vstack([nn[0], [0, c.number, 0], nn[1]])
+                line.append(elem)
+            plane.append(np.hstack(line))
+        plane = np.vstack(plane)
+        ax.table(plane.tolist(), loc='center')
+        plt.savefig(f"{uuid4()}_{i}.png")
+
+if args.points is not None:
+    points = np.asarray(args.points).ravel().tolist()
+    print(f"Path points: {points}")
+    cube.getPath(points)
