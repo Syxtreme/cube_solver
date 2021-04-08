@@ -11,6 +11,7 @@ import numpy as np
 import argparse
 from warnings import warn
 from python_tsp.exact import solve_tsp_dynamic_programming
+from matplotlib import pyplot as plt
 
 
 class Direction():
@@ -482,8 +483,21 @@ for r in rows.ravel():
             cell[d] = n
 
 cube.construct_grid()
+#%%
 # path, directions = cube.search(1, 216)
 # print(directions)
 # print([c.number for c in path])
 
+fig, axs = plt.subplots(2, 3)
+i = 0
+for rax in axs:
+    for ax in rax:
+        ax.axis('tight')
+        ax.axis('off')
+        plane = []
+        for row in cube.grid[:, :, i]:
+            plane.append([c.number for c in row])
+        ax.table(plane,loc='center')
+        i += 1
+        
 cube.getPath(points)
